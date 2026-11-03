@@ -1,12 +1,8 @@
 import { useMemo, useState } from "react";
 import { GraduationCap, Clock, ArrowRight, ArrowLeftRight } from "lucide-react";
 import { sampleRooms } from "@/data";
-import {
-  checkAvailability,
-  formatDuration,
-  minutesToTime,
-  timeToMinutes,
-} from "@/utils";
+import { evaluateRequest } from "@/availability";
+import { formatDuration, minutesToTime, timeToMinutes } from "@/utils";
 import type { AvailabilityResult } from "@/types";
 import { RoomSelector } from "@/components/RoomSelector";
 import { Timeline } from "@/components/Timeline";
@@ -40,31 +36,14 @@ export default function App() {
       : null;
 
   function handleCheck() {
-    setFormError(null);
-
-    if (!selectedRoom) {
-      setFormError("Please select a room first.");
+    const outcome = evaluateRequest(selectedRoom, startTimeStr, endTimeStr, currentTimeStr);
+    if (outcome.ok) {
+      setFormError(null);
+      setResult(outcome.result);
+    } else {
+      setFormError(outcome.error);
       setResult(null);
-      return;
     }
-
-    const start = timeToMinutes(startTimeStr);
-    const end = timeToMinutes(endTimeStr);
-
-    if (start === null || end === null) {
-      setFormError("Please enter valid start and end times (HH:MM).");
-      setResult(null);
-      return;
-    }
-
-    const currentMin = timeToMinutes(currentTimeStr);
-    if (currentMin === null) {
-      setFormError("Please enter a valid current time.");
-      setResult(null);
-      return;
-    }
-
-    setResult(checkAvailability(selectedRoom, start, end, currentMin));
   }
 
   function handleReset() {
