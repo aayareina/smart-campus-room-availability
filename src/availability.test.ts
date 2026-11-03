@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Room } from "@/types";
 import { checkAvailability, evaluateRequest } from "@/availability";
+import { sampleRooms } from "@/data";
 
 const room: Room = {
   id: "test-room",
@@ -33,6 +34,20 @@ describe("checkAvailability", () => {
 
     const reversed = checkAvailability(room, 800, 800, 0);
     expect(reversed.reasons).toContain("Start time must be earlier than end time.");
+  });
+
+  it("rejects a start earlier than the current time (AC1)", () => {
+    const result = checkAvailability(room, 480, 540, 540);
+    expect(result.available).toBe(false);
+    expect(result.reasons).toEqual([
+      "Start time must be after the current time (09:00).",
+    ]);
+  });
+
+  it("rejects a reversed interval where end is before start (AC1)", () => {
+    const result = checkAvailability(room, 900, 800, 0);
+    expect(result.available).toBe(false);
+    expect(result.reasons).toContain("Start time must be earlier than end time.");
   });
 
   it("rejects bookings longer than 120 minutes (AC2)", () => {
@@ -69,6 +84,25 @@ describe("checkAvailability", () => {
     const snapshot = structuredClone(room);
     checkAvailability(room, 630, 690, 0);
     expect(room).toEqual(snapshot);
+  });
+});
+
+describe("sample fixtures", () => {
+  it("are not mutated by availability checks (AC5)", () => {
+    const snapshot = structuredClone(sampleRooms);
+    for (const r of sampleRooms) {
+      checkAvailability(r, 600, 660, 0);
+      evaluateRequest(r, "10:00", "11:00", "08:00");
+    }
+    expect(sampleRooms).toEqual(snapshot);
+  });
+
+  it("blocked fixture room is rejected with its maintenance reason (AC3)", () => {
+    const auditorium = sampleRooms.find((r) => r.id === "aud-a");
+    expect(auditorium).toBeDefined();
+    const result = checkAvailability(auditorium!, 0, 60, 0);
+    expect(result.available).toBe(false);
+    expect(result.reasons).toContain("Scheduled maintenance — unavailable today.");
   });
 });
 
