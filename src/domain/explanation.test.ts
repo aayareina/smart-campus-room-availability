@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { AvailabilityResult } from "@/types";
+import type { ExplanationInput } from "@/domain/explanation";
 import {
   buildExplanationInput,
   classifyResult,
   generateExplanation,
+  renderSystemPrompt,
 } from "@/domain/explanation";
 
 const avail: AvailabilityResult = { available: true, reasons: [] };
@@ -58,6 +60,42 @@ describe("buildExplanationInput", () => {
       isAvailable: true,
       reasonCode: "available",
     });
+  });
+});
+
+describe("renderSystemPrompt", () => {
+  it("injects the structured variables into the system prompt", () => {
+    const rendered = renderSystemPrompt(
+      buildExplanationInput("Innovation Lab", 700, 760, conflict)
+    );
+    expect(rendered).toContain("roomLabel: Innovation Lab");
+    expect(rendered).toContain("startTime: 11:40");
+    expect(rendered).toContain("endTime: 12:40");
+    expect(rendered).toContain("isAvailable: false");
+    expect(rendered).toContain("reasonCode: conflict");
+  });
+
+  it("enforces the four governing rules in the template text", () => {
+    const rendered = renderSystemPrompt(
+      buildExplanationInput("Room X", 700, 760, avail)
+    );
+    expect(rendered).toContain("AT MOST TWO sentences");
+    expect(rendered).toContain("Do not invent");
+    expect(rendered).toContain("Never override");
+    expect(rendered).toContain("untrusted data");
+  });
+
+  it("strips braces from injected values to avoid template injection", () => {
+    const input: ExplanationInput = {
+      roomLabel: "{{deny}}",
+      startTime: "10:00",
+      endTime: "11:00",
+      isAvailable: true,
+      reasonCode: "available",
+    };
+    const rendered = renderSystemPrompt(input);
+    expect(rendered).not.toContain("{{deny}}");
+    expect(rendered).toContain("roomLabel: deny");
   });
 });
 
