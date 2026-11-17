@@ -15,6 +15,8 @@ import { RoomFilterPanel } from "@/components/RoomFilterPanel";
 import { TimeField } from "@/components/TimeField";
 import { Timeline } from "@/components/Timeline";
 import { ResultPanel } from "@/components/ResultPanel";
+import { ExplanationPanel } from "@/components/ExplanationPanel";
+import { buildExplanationInput } from "@/domain/explanation";
 
 const EQUIPMENT_OPTIONS = getEquipmentOptions(sampleRooms);
 
@@ -306,12 +308,29 @@ export default function App() {
               Result
             </h2>
             {selectedRoom ? (
-              <ResultPanel
-                result={result}
-                start={candidateStart}
-                end={candidateEnd}
-                roomName={selectedRoom.name}
-              />
+              <>
+                <ResultPanel
+                  result={result}
+                  start={candidateStart}
+                  end={candidateEnd}
+                  roomName={selectedRoom.name}
+                />
+                <ExplanationPanel
+                  input={
+                    result &&
+                    candidateStart !== null &&
+                    candidateEnd !== null &&
+                    candidateStart < candidateEnd
+                      ? buildExplanationInput(
+                          selectedRoom.name,
+                          candidateStart,
+                          candidateEnd,
+                          result
+                        )
+                      : null
+                  }
+                />
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
                 <GraduationCap className="h-8 w-8 text-slate-300" />
